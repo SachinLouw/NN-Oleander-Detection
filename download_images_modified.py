@@ -31,7 +31,7 @@ def make_directories():
         else:
             print ("Successfully created the directory %s " % path)
 
-def download_images(csv_file):
+def download_images(csv_file, crop = "No"):
     try:
         # read data
         with open(csv_file, 'rt') as file:
@@ -62,13 +62,30 @@ def download_images(csv_file):
                     for object in objects:
                         if object['title'] == object_labels[i]:
                             if image_downloaded:
-                                #crop image section 
 
-                                param = object['polygon'] #takes in crop coord as dict
-                                crop_param = []
-                                for xy in param: #iterates over values and adds to crop_param
-                                    crop_param.append((xy["x"],xy["y"]))
-                                polygon_crop(file_name, crop_param)
+                                #crop image section 
+                                if crop == "polygon":
+                                    param = object['polygon'] #takes in crop coord as dict
+                                    crop_param = []
+                                    for xy in param: #iterates over values and adds to crop_param
+                                        crop_param.append((xy["x"],xy["y"]))
+                                    polygon_crop(file_name, crop_param)
+                                else if crop == "box":
+                                    param = object['box'] #takes in crop coord as dict
+                                    crop_param = []
+                                    params = [] # parameters to be averaged
+                                    directory = project_name
+
+                                    for img in os.listdir(directory): # takes dims of polgyon img
+                                        if img.contains("polycrop"):
+                                            image = PIL.Image.open(img)
+                                            params.append(image.size)
+                                    height, width = get_avg_dim(params)
+
+                                    for xy in param: #iterates over values and adds to crop_param
+                                        crop_param.append((xy["x"],xy["y"]))
+
+                                    box_crop(file_name, height, width, crop_param)         
                             else:
                                 # download original image
                                 dir_name = paths[3*i]
@@ -122,17 +139,25 @@ def polygon_crop(im_file, crop_param):
 
     # back to Image from numpy
     newIm = Image.fromarray(newImArray, "RGBA")
-    newIm.save("{}{}{}.png".format(project_name, "0"*(5-len(row_index)), row_index))
+    newIm.save("{}{}{}_polycrop.png".format(project_name, "0"*(5-len(row_index)), row_index))
 
 
-def get_avg_dim():
-    #get height/width tuple
-    #add to sum and increment counter
-    #at end return avg = sum/count
-    
-    pass
+def get_avg_dim(img_params):
+    sum = 0
+    # for image in folder
+    # add h,w to list img_params
+    # find mean https://www.geeksforgeeks.org/python-column-mean-in-tuple-list/
 
-def box_crop():
+    def avg(list): 
+        return sum(list)/len(list) 
+                
+    average = tuple(map(avg, zip(*img_params))) 
+
+    return average
+
+def box_crop(im_file, height, width, crop_param):
+    # keep cropping and saving files until max possible
+    # boxes with height weight cut out per image
     pass
 
 
